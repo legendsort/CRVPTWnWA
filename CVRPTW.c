@@ -18,14 +18,17 @@ char str[111]; // temp char array for input
 int belong[SZ]; // node is belong to path or not
 int cnt[SZ]; // number of nodes belonging path
 int dst[SZ]; // distance of path
+int cannotReach[SZ];
+int nc;
+
 
 const int capacity[2][3] = {
-	{500, 300, 200},
-	{1500, 1000, 500}	
+	{500, 300, 200}, //for instance 9
+	{1500, 1000, 500} //for instance 29
 };
 const int velocity[2] = {
-	1400,
-	60
+	1400, //for instance 9, 1400m/hmin
+	60 //for instance 29, 80km/hour
 };
 
 const int D = 50;
@@ -94,13 +97,28 @@ int calc(int* route) {
 void display(int* route) {
 	int n = nA;
 	int i = 0;
+	if(nc) {
+		printf("The nodes we cannot reach to\n");
+		for(i=0; i<nc; i++) {
+			printf("%d ", cannotReach[i]);
+		}
+		puts("");
+	} else {
+		printf("Wow!!! We deliver all\n");
+	}
 	int vehicles = -1;
+	int vehicleID = 1;
 	for(i=0; i<nA; i++) {
 		if(i) printf("->");
+		if(i < nA-1 && route[i] == 0) {
+			if(i) printf("0\n");
+			printf("Vehicle %d: ", vehicleID++);
+		}
 		printf("%d", route[i]);
 		if(route[i] == 0) vehicles ++;
 	}
 	printf("\n");
+	puts("");
 	printf("Total distance: %d\n", calc(route));
 	printf("Used vehicles: %d\n", vehicles);
 }
@@ -135,7 +153,8 @@ void getSavingValues() {
 bool validPath(int *route, int nt) {
 	double t = 7;
 	int pre = 0;
-	for(int i=0; i<nt; i++) {
+	int i;
+	for(i=0; i<nt; i++) {
 		int p = route[i];
 		double take = 1.0 * d[pre][p] / V;
 		t += take;
@@ -243,6 +262,20 @@ void executeCW() {
 		
 		for(j=0; j<len[i]; j++) Aans[nA++] = route[i][j];
 		Aans[nA++] = 0;
+	}
+	for(i=1; i<n; i++) {
+		if(belong[i] == false) {
+			nt = 0;
+			temp[nt++] = i;
+			if(validPath(temp, nt)) {
+				belong[i] = true;
+				Aans[nA++] = i;
+				Aans[nA++] = 0;
+			} else {
+				cannotReach[nc++] = i;
+				
+			}
+		}
 	}
 }
 
@@ -392,9 +425,9 @@ void ImproveWithTabu() {
 void init() {
 	np = nt = nr = nA = 0;	
 	qf = qb = 0;
+	nc = 0;
+	
 }
-
-
 
 int main() {
 	
