@@ -28,7 +28,7 @@ const int capacity[2][3] = {
 };
 const int velocity[2] = {
 	1400, //for instance 9, 1400m/hmin
-	60 //for instance 29, 80km/hour
+	100 //for instance 29, 80km/hour
 };
 
 const int D = 50;
@@ -93,6 +93,8 @@ int calc(int* route) {
 	
 	return distance;
 }
+
+
 // display the route
 void display(int* route) {
 	int n = nA;
@@ -108,16 +110,48 @@ void display(int* route) {
 	}
 	int vehicles = -1;
 	int vehicleID = 1;
+	int distance = 0, takeDays = 0;
+	double takeHours = 0;
+	int pre = 0;
 	for(i=0; i<nA; i++) {
 		if(i) printf("->");
 		if(i < nA-1 && route[i] == 0) {
-			if(i) printf("0\n");
+			if(i) {
+				printf("0\n");
+				printf("This vehicle moved %dkm and returned at %d day %.1lf hour.\n", distance, takeDays, takeHours);
+				
+			}
 			printf("Vehicle %d: ", vehicleID++);
+			distance = 0, takeDays = 0, takeHours = 0;
+		} else {
+			distance += d[pre][route[i]];
+			double take = 1.0 * d[pre][route[i]] / V;
+			takeHours += take;
+			int days = ((int)takeHours) / 24;
+			takeDays += days;
+			takeHours -= 24 * days;
+			if(route[i]) {
+				takeHours = fmax(takeHours, 9.0);
+				if(takeHours > 12) takeHours = fmax(takeHours, 14.0);
+				if(takeHours > 17) {
+					takeHours = 9;
+					takeDays++;
+				}
+			} else {
+				takeHours = fmax(takeHours, 7.0);
+				if(takeHours > 19) {
+					takeHours = 7;
+					takeDays++;
+				}
+			}
+			
 		}
 		printf("%d", route[i]);
 		if(route[i] == 0) vehicles ++;
+		pre = route[i];
 	}
 	printf("\n");
+	printf("This vehicle moved %dkm and returned at %d days %.1lf hour.\n", distance, takeDays, takeHours);
 	puts("");
 	printf("Total distance: %d\n", calc(route));
 	printf("Used vehicles: %d\n", vehicles);
@@ -150,7 +184,9 @@ void getSavingValues() {
 // check whether we can deliver to clients with path in time
 // suitable time [9am: 12am] [2pm: 5pm]
 // work time[7am: 7pm]
-bool validPath(int *route, int nt) {
+// if we can deliver next day and so on, always return true
+int validPath(int *route, int nt) {
+	return 1;
 	double t = 7;
 	int pre = 0;
 	int i;
@@ -165,7 +201,7 @@ bool validPath(int *route, int nt) {
 	}
 	double take = 1.0 * d[pre][0] / V;
 	t += take;
-	if(t > 19) return false;
+	if(t > 19) return 0;
 	return true;
 }
 
@@ -179,7 +215,7 @@ bool validAns(int *route, int nr) {
 	nt = 0;
 	for(i=1; i<nr; i++) {
 		if(route[i] == 0) {
-			if(validPath(tt, nt) == false) return false;
+			if(validPath(tt, nt) == 0) return false;
 			nt = 0;
 			continue;	
 		}
@@ -406,7 +442,7 @@ void executeTabu() {
 		}
 		memcpy(tabu[qb], mem, nA * 4);
 		qb++;
-		if(qb - qf > 300) qf++;
+		if(qb - qf > 500) qf++;
 	}
 }
 
